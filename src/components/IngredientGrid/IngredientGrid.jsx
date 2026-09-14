@@ -56,31 +56,90 @@ function IngredientGrid({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Search */}
-      <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2
-          text-muted text-lg pointer-events-none"
-        >
-          🔍
-        </span>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          placeholder="Search ingredients or type to add custom..."
-          className="w-full bg-card border border-border rounded-xl
-            pl-11 pr-4 py-3 text-sm text-white placeholder:text-muted
-            focus:outline-none focus:ring-2 focus:ring-primary/40
-            focus:border-primary/60 transition-all duration-200"
-        />
-        {showSearch && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2
-            text-xs text-muted hidden sm:block"
+      {/* Free-form input — primary entry point */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          {/* Label */}
+          <label
+            htmlFor="ingredient-input"
+            className="text-sm font-semibold text-white"
           >
-            Press Enter to add custom
+            Type an ingredient
+          </label>
+          <span className="text-xs text-muted">
+            — or pick from the list below
           </span>
-        )}
+        </div>
+
+        <div className="flex gap-2">
+          {/* Input */}
+          <div className="relative flex-1">
+            <span
+              className="absolute left-4 top-1/2 -translate-y-1/2
+                text-muted text-base pointer-events-none"
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <input
+              id="ingredient-input"
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder='e.g. "turmeric", "coconut milk", "leftover rice"'
+              autoComplete="off"
+              className="w-full bg-card border border-border
+                rounded-xl pl-11 pr-4 py-3 text-base text-white
+                placeholder:text-muted
+                focus:outline-none focus:ring-2 focus:ring-primary/40
+                focus:border-primary/60 transition-all duration-200"
+            />
+          </div>
+
+          {/* Add button — visible when user has typed something
+              that is not already in the standard list */}
+          {search.trim().length > 0 && (
+            <button
+              onClick={() => {
+                const val = search.trim();
+                if (!val) return;
+
+                const exists = INGREDIENTS.some(
+                  (i) => i.name.toLowerCase() === val.toLowerCase()
+                );
+                const alreadyCustom = customIngredients.some(
+                  (c) => c.toLowerCase() === val.toLowerCase()
+                );
+
+                if (!exists && !alreadyCustom) {
+                  onAddCustom(val);
+                }
+                setSearch('');
+              }}
+              className="shrink-0 px-4 py-3 rounded-xl bg-primary
+                text-white text-sm font-semibold
+                hover:bg-accent active:scale-95
+                transition-all duration-200 whitespace-nowrap"
+            >
+              + Add
+            </button>
+          )}
+        </div>
+
+        {/* Instructional hint */}
+        <p className="text-xs text-muted leading-relaxed">
+          Select from 100+ ingredients below, or type anything
+          and press{' '}
+          <kbd className="px-1.5 py-0.5 rounded bg-border
+            text-white text-xs font-mono"
+          >
+            Enter
+          </kbd>
+          {' '}or click{' '}
+          <span className="text-primary font-medium">+ Add</span>
+          {' '}to include it.
+        </p>
       </div>
 
       {/* Search results */}

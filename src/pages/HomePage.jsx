@@ -9,6 +9,27 @@ import useSuggestions from '../hooks/useSuggestions.js';
 import { INGREDIENTS } from '../data/ingredients.js';
 
 /**
+ * EmptyState — shown in the ingredient section before
+ * the user has selected anything. Prompts action.
+ */
+function EmptyIngredientState() {
+  return (
+    <div className="flex flex-col items-center gap-3
+      py-10 text-center animate-fade-in"
+    >
+      <span className="text-5xl">🧺</span>
+      <p className="text-sm font-medium text-white">
+        No ingredients selected yet
+      </p>
+      <p className="text-xs text-muted max-w-xs">
+        Pick from the list above or type your own.
+        Select at least one to find recipes.
+      </p>
+    </div>
+  );
+}
+
+/**
  * FOOD_EMOJIS — decorative collage for the hero section.
  * @type {string[]}
  */
@@ -285,6 +306,7 @@ function HomePage() {
             customIngredients={customIngredients}
             onAddCustom={handleAddCustom}
           />
+          {selectedIds.size === 0 && <EmptyIngredientState />}
         </div>
       </section>
 
