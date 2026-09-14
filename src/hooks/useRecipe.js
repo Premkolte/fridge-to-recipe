@@ -54,6 +54,7 @@ export default function useRecipe() {
       'EMPTY_RESPONSE', 'MALFORMED_JSON',
       'INVALID_SHAPE', 'INTERNAL_ERROR',
       'RATE_LIMITED', 'NETWORK_ERROR',
+      'TIMEOUT',
     ]);
     return { message, code, retryable: retryable.has(code) };
   }
@@ -70,12 +71,20 @@ export default function useRecipe() {
     setRecipe(null);
     setCompletedSteps(new Set());
 
+    /** AbortController to cancel the request after TIMEOUT_MS */
+    const controller = new AbortController();
+    const TIMEOUT_MS = 15000;
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
     try {
       const response = await fetch('/api/recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dishName, ingredients }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (thisId !== requestIdRef.current) return;
 
@@ -101,8 +110,21 @@ export default function useRecipe() {
 
       setRecipe(data.recipe);
     } catch (err) {
+      clearTimeout(timeoutId);
+
       if (thisId !== requestIdRef.current) return;
-      console.error('[useRecipe]', err);
+
+      // AbortError means our timeout fired
+      if (err.name === 'AbortError') {
+        console.error('[useRecipe] Request timed out');
+        setError(buildError(
+          'TIMEOUT',
+          'The request took too long. Please try again.'
+        ));
+        return;
+      }
+
+      console.error('[useRecipe] Network error:', err);
       setError(buildError(
         'NETWORK_ERROR',
         'Could not reach the server. Check your connection.'

@@ -47,6 +47,7 @@ export default function useSuggestions() {
       'EMPTY_RESPONSE', 'MALFORMED_JSON',
       'INVALID_SHAPE', 'INTERNAL_ERROR',
       'RATE_LIMITED', 'NETWORK_ERROR',
+      'TIMEOUT',
     ]);
     return { message, code, retryable: retryable.has(code) };
   }
@@ -63,12 +64,20 @@ export default function useSuggestions() {
     setError(null);
     setSuggestions([]);
 
+    /** AbortController to cancel the request after TIMEOUT_MS */
+    const controller = new AbortController();
+    const TIMEOUT_MS = 15000;
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
     try {
       const response = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ingredients }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (thisId !== requestIdRef.current) return;
 
@@ -97,8 +106,21 @@ export default function useSuggestions() {
 
       setSuggestions(data.suggestions);
     } catch (err) {
+      clearTimeout(timeoutId);
+
       if (thisId !== requestIdRef.current) return;
-      console.error('[useSuggestions]', err);
+
+      // AbortError means our timeout fired
+      if (err.name === 'AbortError') {
+        console.error('[useSuggestions] Request timed out');
+        setError(buildError(
+          'TIMEOUT',
+          'The request took too long. Please try again.'
+        ));
+        return;
+      }
+
+      console.error('[useSuggestions] Network error:', err);
       setError(buildError(
         'NETWORK_ERROR',
         'Could not reach the server. Check your connection.'
