@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 /**
  * DIFFICULTY_COLORS — maps difficulty label to color classes.
  */
@@ -18,6 +20,13 @@ const DIFFICULTY_COLORS = {
  * @param {function(Object): void} props.onSelect - Called with the selected suggestion
  */
 function SuggestionCards({ suggestions, onClose, onSelect }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   if (!suggestions.length) return null;
 
   return (
@@ -25,17 +34,17 @@ function SuggestionCards({ suggestions, onClose, onSelect }) {
       role="dialog"
       aria-modal="true"
       aria-label="Recipe suggestions"
-      className="fixed inset-0 z-50 flex items-center
-        justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 overflow-y-auto"
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal panel */}
-      <div className="relative w-full max-w-4xl animate-scale-in">
+      {/* Modal panel wrapper */}
+      <div className="min-h-full flex items-center justify-center p-4 sm:p-6 py-12">
+        <div className="relative w-full max-w-4xl animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -135,6 +144,7 @@ function SuggestionCards({ suggestions, onClose, onSelect }) {
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );
