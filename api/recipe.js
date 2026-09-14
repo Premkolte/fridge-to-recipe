@@ -125,6 +125,7 @@ Rules:
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       max_tokens: 2048,
+      response_format: { type: 'json_object' },
     });
 
     const raw = completion.choices[0]?.message?.content ?? '';
