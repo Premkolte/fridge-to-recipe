@@ -248,7 +248,8 @@ The JSON must be parseable by JSON.parse() with no preprocessing.`;
     if (
       !parsed.recipe ||
       !Array.isArray(parsed.recipe.steps) ||
-      parsed.recipe.steps.length !== 10
+      parsed.recipe.steps.length < 8 ||
+      parsed.recipe.steps.length > 12
     ) {
       return res.status(502).json({
         error: 'AI response has invalid recipe structure',
