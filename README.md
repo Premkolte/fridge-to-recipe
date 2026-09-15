@@ -3,7 +3,7 @@
 Turn whatever's in your fridge into a step-by-step recipe.
 Select from 100+ ingredients, get 3 AI-generated dish
 suggestions, pick one, and cook it with a detailed 10-step
-recipe — all powered by Groq + Qwen.
+recipe — all powered by Groq + GPT-OSS-120B.
 
 **Live demo:** https://fridgechef.premkolte.in
 
@@ -109,12 +109,11 @@ design, state management, error classification, and
 UI decisions — is my own. I can explain every line
 of this code and the reasoning behind every decision.
 
-Groq with Qwen 3.6 27B is used for recipe generation
-model at runtime via two serverless functions.
+Groq with openai/gpt-oss-120b is used for recipe generation
+at runtime via two serverless functions.
 The model was switched mid-development from
 llama-3.1-70b-versatile (decommissioned by Groq on
-Sep 11 2026) to openai/gpt-oss-120b, then to
-qwen/qwen3.6-27b when gpt-oss-120b left the free tier.
+Sep 11 2026) to openai/gpt-oss-120b.
 This required a two-line change isolated to the backend —
 The frontend was unaffected.
 
@@ -122,7 +121,7 @@ The frontend was unaffected.
 
 ## Known limitations
 
-- Qwen occasionally returns JSON with slight structural
+- GPT-OSS-120B occasionally returns JSON with slight structural
   variations despite strict prompting. The Zod normalisation
   layer handles most cases; a retry resolves the rest.
 - Free tier rate limits (30 RPM) may cause 429 errors
@@ -173,6 +172,6 @@ The frontend was unaffected.
 | Frontend   | React 18 + Vite             |
 | Styling    | Tailwind CSS v3             |
 | Routing    | React Router DOM v6         |
-| AI         | Groq — qwen/qwen3.6-27b     |
+| AI         | Groq — openai/gpt-oss-120b  |
 | Validation | Zod                         |
 | Deployment | Vercel (serverless)         |
