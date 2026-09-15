@@ -1,17 +1,17 @@
-# 🥘 Fridge to Recipe
+# 🥘 FridgeChef — AI Recipe Generator
 
 Turn whatever's in your fridge into a step-by-step recipe.
-Paste your ingredients, get a structured recipe, check off
-steps as you cook, scale servings, and swap ingredients —
-all powered by Gemini.
+Select from 100+ ingredients, get 3 AI-generated dish
+suggestions, pick one, and cook it with a detailed 10-step
+recipe — all powered by Groq + Qwen.
 
-Built as a frontend internship assignment for Flam.
+**Live demo:** https://fridgechef.premkolte.in
 
 ---
 
 ## Setup
 
-**Requirements:** Node 18+, a Gemini API key (free tier works)
+**Requirements:** Node 18+, a Groq API key (free tier)
 
 1. Clone the repo
    git clone <your-repo-url>
@@ -23,13 +23,13 @@ Built as a frontend internship assignment for Flam.
 3. Create your environment file
    cp .env.example .env.local
 
-4. Add your Gemini API key to .env.local
-   GEMINI_API_KEY=AIza...your key here
+4. Add your Groq API key to .env.local
+   GROQ_API_KEY=gsk_...your key here
 
-   Get a free key at: https://aistudio.google.com/app/apikey
+   Get a free key at: https://console.groq.com
 
 5. Start the development server
-   npm install -g vercel   (if not already installed)
+   npm install -g vercel
    vercel dev
 
 6. Open http://localhost:3000
@@ -38,98 +38,142 @@ Built as a frontend internship assignment for Flam.
 
 ## Usage
 
-1. Type ingredients you have — e.g. "eggs, spinach, feta, garlic"
-2. Click Find a Recipe or press Cmd/Ctrl + Enter
-3. The AI returns a structured recipe parsed into interactive UI
-4. Scale servings with the +/− control — amounts update live
-5. Check off steps as you cook
-6. Tap any ingredient to see swap suggestions
-7. Use the Refine input to modify the recipe —
-   e.g. "make it vegan" or "cut the steps in half"
+1. Open the app — read the hero and how-it-works sections
+2. Scroll down to the ingredient grid
+3. Select ingredients by clicking chips — or type anything
+   custom in the input and press Enter or click + Add
+4. A tray appears at the bottom showing your selection
+5. Click Find Recipes — AI suggests 3 dishes in a modal
+6. Pick a dish — navigates to the detailed recipe page
+7. Check off each of the 10 steps as you cook
+8. Progress bar fills as you complete steps
+9. Tap any step to mark done / undone
+10. Use the back button to return and try another dish
 
 ---
 
 ## Architecture decisions
 
-### Why a serverless function?
-The Gemini API key must never reach the browser.
-The Vercel serverless function in api/generate.js acts
-as a thin proxy — it receives the ingredient list, builds
-the prompt, calls Gemini, and returns structured JSON.
-The browser never sees the key.
+### Two-stage AI flow
+Most implementations make one AI call. FridgeChef makes two:
+the first returns 3 lightweight suggestions (name +
+description), the second returns a full 10-step recipe only
+for the dish the user actually chooses. This avoids
+generating detailed recipes the user never reads.
 
-### Why Zod?
-AI output is unpredictable. Zod validates the parsed JSON
-against a strict schema before it touches React state.
-If the shape is wrong, the error is caught and classified
-before any component renders. This is the difference between
-a crash and a graceful error message.
+### Serverless function as API proxy
+The Groq API key never reaches the browser. Both
+/api/suggest and /api/recipe are Vercel serverless functions
+that receive ingredient lists, build prompts, call Groq,
+and return validated JSON. The browser only ever sees
+the processed response.
 
-### Why request versioning?
-If a user submits, then immediately submits again, two
-requests are in flight. Without versioning, the first
-response could arrive after the second and overwrite
-fresher data. Each request gets a numeric ID; responses
-from older requests are silently discarded.
+### Request versioning
+Both useSuggestions and useRecipe hooks assign a numeric
+ID to each request. When a response arrives, it is only
+applied to state if its ID matches the latest request ID.
+This prevents stale responses from overwriting newer ones
+when the user fires multiple requests quickly.
 
-### Why derived serving scaling?
-Base ingredient amounts from the AI are never mutated.
-Scaled amounts are computed from base × (target/base)
-at render time. This means you can scale up, scale down,
-and scale back without any data loss.
+### Zod schema validation
+Every response from the AI passes through a Zod schema
+before touching React state. If the shape is wrong —
+missing fields, wrong types, wrong array length — it is
+caught here and classified as a retryable error. Components
+never render unvalidated data.
+
+### AbortController timeout
+Every fetch call has a 15-second AbortController timeout.
+If Groq takes longer than 15 seconds or never responds,
+the request is cancelled and a specific timeout error is
+shown with a retry button. The user is never stuck on
+an infinite spinner.
+
+### Difficulty normalization
+The Zod schema includes a normalizeDifficulty transform
+that accepts any case variation ("easy", "MEDIUM",
+"moderate") and normalizes it to "Easy", "Medium", or
+"Hard" before validation. This makes the validation layer
+resilient to minor model inconsistencies without relaxing
+correctness.
 
 ---
 
 ## AI usage note
 
-I used Claude (Anthropic) to help design the architecture,
-write the Zod schema, and structure the prompt engineering
-in api/generate.js. The implementation — component logic,
-hook design, error classification, and state management —
-is my own. I can explain every line of this code and the
-reasoning behind every decision.
+I used Claude (Anthropic) to help design the system
+architecture, write the Zod schemas, structure the
+prompt engineering, and plan the request versioning
+pattern. The implementation — component logic, hook
+design, state management, error classification, and
+UI decisions — is my own. I can explain every line
+of this code and the reasoning behind every decision.
 
-Gemini 1.5 Flash is used as the recipe generation model
-at runtime, routed through a Vercel serverless function.
+Groq with Qwen 3.6 27B is used as the recipe generation
+model at runtime via two serverless functions.
+The model was switched mid-development from
+llama-3.1-70b-versatile (decommissioned by Groq on
+Sep 11 2026) to openai/gpt-oss-120b, then to
+qwen/qwen3.6-27b when gpt-oss-120b left the free tier.
+This required a two-line change isolated to the backend —
+the frontend was unaffected.
 
 ---
 
 ## Known limitations
 
-- Gemini occasionally returns unexpected JSON structure
-  despite strict prompting. The Zod validation layer
-  catches this and shows a retryable error.
-- Free tier rate limits may cause 429 errors under
-  heavy use. The error state shows a retry button.
+- Qwen occasionally returns JSON with slight structural
+  variations despite strict prompting. The Zod normalization
+  layer handles most cases; a retry resolves the rest.
+- Free tier rate limits (30 RPM) may cause 429 errors
+  under heavy simultaneous use. The error state shows
+  a retry button with a clear message.
 - Ingredient swap suggestions are AI-generated and may
   not always be practical substitutes.
-- Refinement sends the full recipe back to the API on
-  each call — not optimized for very long recipes.
-- No session persistence — refreshing the page clears
-  the recipe.
+- No session persistence — refreshing the recipe page
+  clears progress. Back-navigating returns to the
+  ingredient grid.
+- Direct navigation to /recipe without state redirects
+  to the homepage — this is intentional, not a bug.
+- The 5-column ingredient grid drops to 4 columns on
+  mobile (< 640px) for readability.
+
+---
+
+## What I would do next
+
+- Stream the Groq response token by token so the recipe
+  appears progressively rather than all at once
+- Save and reload sessions using localStorage so recipe
+  progress persists across page refreshes
+- Add keyboard navigation throughout the ingredient grid
+- Nutrition estimation as an optional AI block per recipe
+- Unit toggle (metric / imperial) for ingredient amounts
+- Groq fallback chain — if primary model hits rate limit,
+  automatically retry with a backup model
 
 ---
 
 ## Time spent
 
-| Phase | Task                              | Time  |
-|-------|-----------------------------------|-------|
-| 1     | Scaffold, Tailwind, ESLint        | 1h    |
-| 2     | Serverless function, Gemini, prompt| 1.5h |
-| 3     | Zod schema, validation layer      | 1h    |
-| 4     | useRecipe hook, state architecture| 1.5h  |
-| 5     | UI components                     | 2h    |
-| 6     | Polish, dark mode, mobile, README | 1h    |
-|       | **Total**                         | **8h**|
+| Phase | Task                                    | Time   |
+|-------|-----------------------------------------|--------|
+| 1     | Scaffold, Tailwind, ESLint, routing     | 1h     |
+| 2     | Full application build                  | 3h     |
+| 3     | Bug fixes, Zod, model migration,        | 2h     |
+|       | timeout, mobile, empty state            |        |
+| 4     | Deployment, README, final polish        | 1h     |
+|       | **Total**                               | **7h** |
 
 ---
 
-## What I'd do next (given more time)
+## Tech stack
 
-- Stream the Gemini response token by token so the recipe
-  appears progressively rather than all at once
-- Save and reload recipes using localStorage
-- Add keyboard navigation throughout (Tab, Enter, Escape
-  already works in SwapModal — extend to the full app)
-- Nutrition estimation as an optional AI-generated block
-- Unit toggle (metric / imperial) for ingredient amounts
+| Layer      | Tool                        |
+|------------|-----------------------------|
+| Frontend   | React 18 + Vite             |
+| Styling    | Tailwind CSS v3             |
+| Routing    | React Router DOM v6         |
+| AI         | Groq — qwen/qwen3.6-27b     |
+| Validation | Zod                         |
+| Deployment | Vercel (serverless)         |
