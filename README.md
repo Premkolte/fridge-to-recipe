@@ -85,14 +85,14 @@ never render unvalidated data.
 ### AbortController timeout
 Every fetch call has a 15-second AbortController timeout.
 If Groq takes longer than 15 seconds or never responds,
-the request is cancelled and a specific timeout error is
+the request is cancelled, and a specific timeout error is
 shown with a retry button. The user is never stuck on
 an infinite spinner.
 
-### Difficulty normalization
+### Difficulty normalisation
 The Zod schema includes a normalizeDifficulty transform
 that accepts any case variation ("easy", "MEDIUM",
-"moderate") and normalizes it to "Easy", "Medium", or
+"moderate") and normalises it to "Easy", "Medium", or
 "Hard" before validation. This makes the validation layer
 resilient to minor model inconsistencies without relaxing
 correctness.
@@ -109,21 +109,21 @@ design, state management, error classification, and
 UI decisions — is my own. I can explain every line
 of this code and the reasoning behind every decision.
 
-Groq with Qwen 3.6 27B is used as the recipe generation
+Groq with Qwen 3.6 27B is used for recipe generation
 model at runtime via two serverless functions.
 The model was switched mid-development from
 llama-3.1-70b-versatile (decommissioned by Groq on
 Sep 11 2026) to openai/gpt-oss-120b, then to
 qwen/qwen3.6-27b when gpt-oss-120b left the free tier.
 This required a two-line change isolated to the backend —
-the frontend was unaffected.
+The frontend was unaffected.
 
 ---
 
 ## Known limitations
 
 - Qwen occasionally returns JSON with slight structural
-  variations despite strict prompting. The Zod normalization
+  variations despite strict prompting. The Zod normalisation
   layer handles most cases; a retry resolves the rest.
 - Free tier rate limits (30 RPM) may cause 429 errors
   under heavy simultaneous use. The error state shows
@@ -148,7 +148,7 @@ the frontend was unaffected.
   progress persists across page refreshes
 - Add keyboard navigation throughout the ingredient grid
 - Nutrition estimation as an optional AI block per recipe
-- Unit toggle (metric / imperial) for ingredient amounts
+- Unit toggle (metric/imperial) for ingredient amounts
 - Groq fallback chain — if primary model hits rate limit,
   automatically retry with a backup model
 
@@ -160,8 +160,7 @@ the frontend was unaffected.
 |-------|-----------------------------------------|--------|
 | 1     | Scaffold, Tailwind, ESLint, routing     | 1h     |
 | 2     | Full application build                  | 3h     |
-| 3     | Bug fixes, Zod, model migration,        | 2h     |
-|       | timeout, mobile, empty state            |        |
+| 3     | Bug fixes, Zod, model migration         | 2h     |
 | 4     | Deployment, README, final polish        | 1h     |
 |       | **Total**                               | **7h** |
 
