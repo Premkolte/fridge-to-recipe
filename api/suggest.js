@@ -75,46 +75,82 @@ export default async function handler(req, res) {
 
   const ingredientList = ingredients.join(', ');
 
-  const prompt = `You are a professional chef. A user has these
-ingredients: ${ingredientList}.
+  const prompt = `You are a professional chef API endpoint.
+You MUST respond with ONLY a valid JSON object.
+This response will be parsed by JSON.parse() and validated
+with Zod schema validation in production code.
+Any deviation from the exact schema will cause an error.
 
-Suggest exactly 3 different dishes they can make using primarily
-these ingredients. Vary the cuisine types.
+STRICT RULES — violating any rule causes a system failure:
+- Response must start with { and end with }
+- No markdown, no code fences, no backticks
+- No text before or after the JSON
+- No comments inside the JSON
+- difficulty must be EXACTLY one of these three strings:
+  "Easy" or "Medium" or "Hard" — no other value is accepted
+- suggestions array must have EXACTLY 3 items — not 2, not 4
+- Every field listed in the schema is required — no omissions
+- id values must be exactly: "dish-0", "dish-1", "dish-2"
 
-Respond with ONLY a valid JSON object. No markdown. No explanation.
-Start with { and end with }.
+User's available ingredients: ${ingredientList}
 
+Return this exact JSON structure with real values:
 {
   "suggestions": [
     {
       "id": "dish-0",
-      "name": "string — dish name",
-      "description": "string — 2 sentences max, appetizing description",
-      "cuisine": "string — cuisine type e.g. Italian, Indian, Asian",
-      "time": "string — total time e.g. 30 mins",
-      "difficulty": "string — Easy / Medium / Hard",
-      "emoji": "string — one relevant food emoji"
+      "name": "name of first dish",
+      "description": "exactly 2 sentences describing this dish appetizingly",
+      "cuisine": "cuisine type such as Italian or Indian or Asian or Mexican",
+      "time": "total time such as 25 mins or 40 mins",
+      "difficulty": "Easy",
+      "emoji": "one single food emoji"
+    },
+    {
+      "id": "dish-1",
+      "name": "name of second dish",
+      "description": "exactly 2 sentences describing this dish appetizingly",
+      "cuisine": "a different cuisine type from dish-0",
+      "time": "total time such as 30 mins or 45 mins",
+      "difficulty": "Medium",
+      "emoji": "one single food emoji"
+    },
+    {
+      "id": "dish-2",
+      "name": "name of third dish",
+      "description": "exactly 2 sentences describing this dish appetizingly",
+      "cuisine": "a different cuisine type from dish-0 and dish-1",
+      "time": "total time such as 35 mins or 50 mins",
+      "difficulty": "Hard",
+      "emoji": "one single food emoji"
     }
   ]
 }
 
-Rules:
-- exactly 3 items in suggestions array
-- id must be dish-0, dish-1, dish-2
-- description must be engaging and appetizing, max 2 sentences
-- use only the provided ingredients as primary ingredients
-- vary cuisine types across the 3 suggestions
-- difficulty must be exactly one of: Easy, Medium, Hard
-- respond with raw JSON only, no markdown fences`;
+Use primarily these ingredients: ${ingredientList}
+Vary the cuisine across all 3 dishes.
+The JSON must be parseable by JSON.parse() with no preprocessing.`;
 
   try {
     const client = getClient();
     const completion = await client.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.8,
+      model: 'llama-3.1-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a JSON API. You only output valid JSON. ' +
+            'You never output markdown, explanations, or code fences. ' +
+            'Your entire response is always a single valid JSON object ' +
+            'starting with { and ending with }.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.4,
       max_tokens: 1024,
-      response_format: { type: 'json_object' },
     });
 
     const raw = completion.choices[0]?.message?.content ?? '';
