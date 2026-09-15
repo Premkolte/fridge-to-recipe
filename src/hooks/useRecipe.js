@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
+import { parseRecipeResponse } from '../lib/parseResponse.js';
+
 
 /**
  * @typedef {Object} RecipeStep
@@ -54,7 +56,7 @@ export default function useRecipe() {
       'EMPTY_RESPONSE', 'MALFORMED_JSON',
       'INVALID_SHAPE', 'INTERNAL_ERROR',
       'RATE_LIMITED', 'NETWORK_ERROR',
-      'TIMEOUT',
+      'TIMEOUT', 'SCHEMA_MISMATCH', 'NULL_RESPONSE',
     ]);
     return { message, code, retryable: retryable.has(code) };
   }
@@ -100,15 +102,14 @@ export default function useRecipe() {
         return;
       }
 
-      if (!data.recipe || !Array.isArray(data.recipe.steps)) {
-        setError(buildError(
-          'INVALID_SHAPE',
-          'Received unexpected recipe data'
-        ));
+      const parsed = parseRecipeResponse(data);
+
+      if (!parsed.success) {
+        setError(buildError(parsed.code, parsed.error));
         return;
       }
 
-      setRecipe(data.recipe);
+      setRecipe(parsed.data.recipe);
     } catch (err) {
       clearTimeout(timeoutId);
 

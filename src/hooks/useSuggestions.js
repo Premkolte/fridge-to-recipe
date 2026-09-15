@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
+import { parseSuggestResponse } from '../lib/parseResponse.js';
+
 
 /**
  * @typedef {Object} Suggestion
@@ -47,7 +49,7 @@ export default function useSuggestions() {
       'EMPTY_RESPONSE', 'MALFORMED_JSON',
       'INVALID_SHAPE', 'INTERNAL_ERROR',
       'RATE_LIMITED', 'NETWORK_ERROR',
-      'TIMEOUT',
+      'TIMEOUT', 'SCHEMA_MISMATCH', 'NULL_RESPONSE',
     ]);
     return { message, code, retryable: retryable.has(code) };
   }
@@ -93,18 +95,14 @@ export default function useSuggestions() {
         return;
       }
 
-      if (
-        !Array.isArray(data.suggestions) ||
-        data.suggestions.length !== 3
-      ) {
-        setError(buildError(
-          'INVALID_SHAPE',
-          'Received unexpected data from the server'
-        ));
+      const parsed = parseSuggestResponse(data);
+
+      if (!parsed.success) {
+        setError(buildError(parsed.code, parsed.error));
         return;
       }
 
-      setSuggestions(data.suggestions);
+      setSuggestions(parsed.data.suggestions);
     } catch (err) {
       clearTimeout(timeoutId);
 
