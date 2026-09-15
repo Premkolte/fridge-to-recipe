@@ -222,11 +222,13 @@ The JSON must be parseable by JSON.parse() with no preprocessing.`;
       ],
       temperature: 0.4,
       max_tokens: 2048,
+      response_format: { type: 'json_object' },
     });
 
     const raw = completion.choices[0]?.message?.content ?? '';
 
     if (!raw.trim()) {
+      console.error('[api/recipe] Empty response from AI model');
       return res.status(502).json({
         error: 'Empty response from AI model',
         code: 'EMPTY_RESPONSE',
@@ -238,7 +240,8 @@ The JSON must be parseable by JSON.parse() with no preprocessing.`;
     let parsed;
     try {
       parsed = JSON.parse(cleaned);
-    } catch {
+    } catch (parseErr) {
+      console.error('[api/recipe] AI returned malformed JSON:', parseErr, '\\nRaw output:', raw);
       return res.status(502).json({
         error: 'AI returned malformed JSON',
         code: 'MALFORMED_JSON',
@@ -251,6 +254,7 @@ The JSON must be parseable by JSON.parse() with no preprocessing.`;
       parsed.recipe.steps.length < 8 ||
       parsed.recipe.steps.length > 12
     ) {
+      console.error('[api/recipe] AI response has invalid recipe structure. Parsed output:', parsed);
       return res.status(502).json({
         error: 'AI response has invalid recipe structure',
         code: 'INVALID_SHAPE',

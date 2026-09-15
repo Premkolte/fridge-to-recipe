@@ -151,11 +151,13 @@ The JSON must be parseable by JSON.parse() with no preprocessing.`;
       ],
       temperature: 0.4,
       max_tokens: 1024,
+      response_format: { type: 'json_object' },
     });
 
     const raw = completion.choices[0]?.message?.content ?? '';
 
     if (!raw.trim()) {
+      console.error('[api/suggest] Empty response from AI model');
       return res.status(502).json({
         error: 'Empty response from AI model',
         code: 'EMPTY_RESPONSE',
@@ -167,7 +169,8 @@ The JSON must be parseable by JSON.parse() with no preprocessing.`;
     let parsed;
     try {
       parsed = JSON.parse(cleaned);
-    } catch {
+    } catch (parseErr) {
+      console.error('[api/suggest] AI returned malformed JSON:', parseErr, '\\nRaw output:', raw);
       return res.status(502).json({
         error: 'AI returned malformed JSON',
         code: 'MALFORMED_JSON',
@@ -178,6 +181,7 @@ The JSON must be parseable by JSON.parse() with no preprocessing.`;
       !Array.isArray(parsed.suggestions) ||
       parsed.suggestions.length !== 3
     ) {
+      console.error('[api/suggest] AI response missing suggestions array or invalid length. Parsed output:', parsed);
       return res.status(502).json({
         error: 'AI response missing suggestions array',
         code: 'INVALID_SHAPE',
