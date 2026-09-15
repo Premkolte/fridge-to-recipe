@@ -205,7 +205,7 @@ The JSON must be parseable by JSON.parse() with no preprocessing.`;
   try {
     const client = getClient();
     const completion = await client.chat.completions.create({
-      model: 'llama-3.1-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [
         {
           role: 'system',
