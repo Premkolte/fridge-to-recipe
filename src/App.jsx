@@ -4,7 +4,7 @@ import HomePage from './pages/HomePage.jsx';
 import RecipePage from './pages/RecipePage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary.jsx';
-import { RecipeSearch } from './components/recipeSeach.jsx';
+import RecipeSearchPage from './pages/RecipeSearchPage.jsx';
 
 /**
  * App — root component. Owns routing.
@@ -20,7 +20,7 @@ function App() {
             <Route path="/"       element={<HomePage />} />
             <Route path="/recipe" element={<RecipePage />} />
             <Route path="/about"  element={<AboutPage />} />
-            <Route path="/searchrecipe" element={<RecipeSearch />} />
+            <Route path="/searchrecipe" element={<RecipeSearchPage />} />
           </Routes>
         </ErrorBoundary>
       </main>

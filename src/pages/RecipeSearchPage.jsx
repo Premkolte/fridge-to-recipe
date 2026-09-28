@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDummy } from '../hooks/useDummy';
 
-export function RecipeSearch() {
+function RecipeSearchPage() {
   const { query, setQuery, recipe, loading } = useDummy();
 
   return (
@@ -89,3 +89,5 @@ export function RecipeSearch() {
     </div>
   );
 }
+
+export default RecipeSearchPage;
