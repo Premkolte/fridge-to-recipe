@@ -5,8 +5,9 @@ import { Link, useLocation } from 'react-router-dom';
  * @type {{ label: string, to: string }[]}
  */
 const NAV_LINKS = [
-  { label: 'Home',     to: '/' },
-  { label: 'About Us', to: '/about' },
+  { label: 'Home',          to: '/' },
+  { label: 'Search Recipe', to: '/searchrecipe' },
+  { label: 'About Us',      to: '/about' },
 ];
 
 /**
